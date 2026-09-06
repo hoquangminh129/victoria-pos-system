@@ -89,7 +89,7 @@ describe('retailSale', () => {
     // Invoice PAID — không sessionId
     const invoiceCall = fakeStore.invoice.create.mock.calls[0][0]
     expect(invoiceCall.data).toMatchObject({ status: 'PAID', grandTotal: 20000 })
-    expect(invoiceCall.data.sessionId).toBeUndefined()
+    expect(invoiceCall.data.sessionId).toBeNull()
 
     // InvoiceItem
     const itemCall = fakeStore.invoiceItem.create.mock.calls[0][0]

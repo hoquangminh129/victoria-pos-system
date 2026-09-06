@@ -108,6 +108,7 @@ export function createBillingRepository(store: BillingAdapterStore): BillingRepo
       const invoice = await store.invoice.create({
         data: {
           invoiceNo: input.invoiceNo,
+          sessionId: input.sessionId ?? null,
           customerId: input.customerId,
           shiftId: input.shiftId,
           staffId: input.staffId,
@@ -310,6 +311,7 @@ export function createBillingRepository(store: BillingAdapterStore): BillingRepo
               staff: { select: { id: true, fullName: true } },
               membership: { include: { plan: { select: { name: true } } } },
               plan: { select: { id: true, name: true } },
+              session: { select: { id: true, customerName: true, customerPhone: true } },
             },
           },
         },

@@ -39,6 +39,13 @@ export async function GET(
       return apiError({ code: 'FORBIDDEN', message: 'Không có quyền xem hoá đơn này', status: 403 })
     }
 
+    // Khách vãng lai nằm trên Session. Hoá đơn cũ có Invoice.sessionId = null
+    // (createPaidInvoice từng không ghi cột này) → suy phiên từ Payment.sessionId.
+    const paySession =
+      invoice.payments.map((p) => p.session).find((s) => s?.customerName || s?.customerPhone) ?? null
+    const walkInName = invoice.session?.customerName ?? paySession?.customerName ?? null
+    const walkInPhone = invoice.session?.customerPhone ?? paySession?.customerPhone ?? null
+
     return apiSuccess({
         id: invoice.id,
         invoiceNo: invoice.invoiceNo,
@@ -56,11 +63,11 @@ export async function GET(
               phone: invoice.customer.phone,
               type: invoice.customer.type,
             }
-          : invoice.session?.customerName
+          : walkInName
             ? {
                 id: null,
-                fullName: invoice.session.customerName,
-                phone: null,
+                fullName: walkInName,
+                phone: walkInPhone,
                 type: 'WALK_IN' as const,
               }
             : null,

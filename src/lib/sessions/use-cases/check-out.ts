@@ -932,6 +932,7 @@ export async function runCheckOutTx(
 
   const invoice = await tx.billing.createPaidInvoice({
     invoiceNo: generateInvoiceNo(),
+    sessionId,
     customerId,
     shiftId,
     staffId,
