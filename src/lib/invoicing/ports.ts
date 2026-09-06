@@ -16,6 +16,8 @@ export interface CreateInvoiceLineInput {
 
 export interface CreatePaidInvoiceInput {
   invoiceNo: string
+  /** Phiên chơi liên quan — bắt buộc cho invoice checkout (đọc tên/SĐT khách vãng lai, đếm lần thu trước) */
+  sessionId?: string | null
   /** Null với khách vãng lai (không tạo Customer) */
   customerId: string | null
   shiftId: string
@@ -163,6 +165,8 @@ export type InvoiceDetail = Prisma.InvoiceGetPayload<{
         staff: { select: { id: true; fullName: true } }
         membership: { include: { plan: { select: { name: true } } } }
         plan: { select: { id: true; name: true } }
+        /** Fallback khi Invoice.sessionId null (hoá đơn cũ) — tên/SĐT khách vãng lai nằm trên phiên */
+        session: { select: { id: true; customerName: true; customerPhone: true } }
       }
     }
   }

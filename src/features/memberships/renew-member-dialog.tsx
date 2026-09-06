@@ -6,7 +6,8 @@ import { Button } from '@/components/ui/button'
 import { Label, Select, Textarea } from '@/components/ui/input'
 import { useToast } from '@/components/ui/toast'
 import { apiJson, jsonRequest } from '@/lib/api'
-import { money, formatDay, paymentMethodLabel } from '@/features/pos/format'
+import { money, formatDay, toNumber } from '@/features/pos/format'
+import { PaymentMethodPicker } from '@/features/pos/payment-method-picker'
 import type { MembershipPlan, PaymentMethod } from '@/features/pos/types'
 
 export type MemberStatus = 'ACTIVE' | 'EXPIRED' | 'NONE'
@@ -123,18 +124,14 @@ export function RenewMemberDialog({
             </Select>
           </div>
 
-          <div>
-            <Label htmlFor="renew-payment">Phương thức thanh toán</Label>
-            <Select
-              id="renew-payment"
-              value={paymentMethod}
-              onChange={(event) => setPaymentMethod(event.target.value as PaymentMethod)}
-            >
-              <option value="CASH">{paymentMethodLabel('CASH')}</option>
-              <option value="TRANSFER">{paymentMethodLabel('TRANSFER')}</option>
-              <option value="CARD">{paymentMethodLabel('CARD')}</option>
-            </Select>
-          </div>
+          <PaymentMethodPicker
+            key={planId}
+            id="renew-payment"
+            label="Phương thức thanh toán"
+            amount={toNumber(selectedPlan?.price)}
+            method={paymentMethod}
+            onMethodChange={setPaymentMethod}
+          />
 
           <div>
             <Label htmlFor="renew-notes">Ghi chú</Label>

@@ -357,7 +357,8 @@ describe('runCheckOutTx', () => {
     const result = await runCheckOutTx(repos, ctx, makeState())
 
     expect(repos.billing.createPaidInvoice).toHaveBeenCalledWith(
-      expect.objectContaining({ customerId: null })
+      // sessionId phải được ghi để UI hoá đơn đọc được tên/SĐT khách vãng lai từ phiên
+      expect.objectContaining({ customerId: null, sessionId: 'session-1' })
     )
     expect(repos.customer.recordPlay).not.toHaveBeenCalled()
     // metadata PLAY_TIME có tên khách vãng lai

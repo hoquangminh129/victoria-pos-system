@@ -21,7 +21,8 @@ import { useToast } from '@/components/ui/toast'
 import { isAdminOnly, isManagerOrAdmin } from '@/lib/shared/roles'
 import { apiJson, jsonRequest } from '@/lib/api'
 import { usePageRefresh } from '@/components/layout/page-refresh-context'
-import { formatDay, money, paymentMethodLabel } from '@/features/pos/format'
+import { formatDay, money, toNumber } from '@/features/pos/format'
+import { PaymentMethodPicker } from '@/features/pos/payment-method-picker'
 import { RenewMemberDialog, type RenewMemberInput } from './renew-member-dialog'
 import type { Customer, Membership, MembershipPlan, PaymentMethod, Shift, UserSession } from '@/features/pos/types'
 
@@ -535,18 +536,14 @@ function MemberPaymentForm({
         </Select>
       </div>
 
-      <div>
-        <Label htmlFor="member-payment">Phương thức thanh toán</Label>
-        <Select
-          id="member-payment"
-          value={paymentMethod}
-          onChange={(event) => onPaymentMethodChange(event.target.value as PaymentMethod)}
-        >
-          <option value="CASH">{paymentMethodLabel('CASH')}</option>
-          <option value="TRANSFER">{paymentMethodLabel('TRANSFER')}</option>
-          <option value="CARD">{paymentMethodLabel('CARD')}</option>
-        </Select>
-      </div>
+      <PaymentMethodPicker
+        key={planId}
+        id="member-payment"
+        label="Phương thức thanh toán"
+        amount={toNumber(selectedPlan?.price)}
+        method={paymentMethod}
+        onMethodChange={onPaymentMethodChange}
+      />
 
       <div>
         <Label htmlFor="member-notes">Ghi chú</Label>
