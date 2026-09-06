@@ -3,17 +3,12 @@
 import { useEffect, useRef, useState } from 'react'
 import { Minus, Plus, Search, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Input, Label } from '@/components/ui/input'
+import { Label } from '@/components/ui/input'
 import { Modal } from '@/components/ui/modal'
 import { useToast } from '@/components/ui/toast'
 import { apiJson, jsonRequest } from '@/lib/api'
-import {
-  cashInputToNumber,
-  formatCashInput,
-  getCashInputSuggestions,
-  normalizeCashInput,
-} from '@/lib/shared/cash-input'
 import { money, toNumber } from './format'
+import { PaymentMethodPicker } from './payment-method-picker'
 import type { Customer, PaymentMethod, Product } from './types'
 
 export function RetailDialog({
@@ -36,20 +31,17 @@ export function RetailDialog({
   const { success: notifySuccess, error: notifyError } = useToast()
   const [cart, setCart] = useState<Record<string, number>>({})
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('CASH')
-  const [cashReceived, setCashReceived] = useState('')
   const [customer, setCustomer] = useState<Customer | null>(null)
   const [customerQuery, setCustomerQuery] = useState('')
   const [customerResults, setCustomerResults] = useState<Customer[]>([])
   const [customerOpen, setCustomerOpen] = useState(false)
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const cashReceivedRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     if (open) {
       /* eslint-disable react-hooks/set-state-in-effect */
       setCart({})
       setPaymentMethod('CASH')
-      setCashReceived('')
       setCustomer(null)
       setCustomerQuery('')
       setCustomerResults([])
@@ -88,9 +80,6 @@ export function RetailDialog({
     .filter((line) => line.quantity > 0)
 
   const grandTotal = cartLines.reduce((sum, line) => sum + line.total, 0)
-  const cashReceivedAmount = cashInputToNumber(cashReceived)
-  const hasCashReceived = cashReceived.trim() !== '' && Number.isFinite(cashReceivedAmount)
-  const changeAmount = cashReceivedAmount - grandTotal
 
   const changeCart = (product: Product, delta: number) => {
     setCart((current) => {
@@ -289,88 +278,13 @@ export function RetailDialog({
         </div>
 
         {/* ── Phương thức thanh toán ── */}
-        <div>
-          <Label>Phương thức thanh toán</Label>
-          <div className="mt-1 grid grid-cols-3 gap-2">
-            {(['CASH', 'TRANSFER', 'CARD'] as PaymentMethod[]).map((method) => (
-              <button
-                key={method}
-                type="button"
-                onClick={() => {
-                  setPaymentMethod(method)
-                  if (method !== 'CASH') setCashReceived('')
-                }}
-                className={`rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${
-                  paymentMethod === method
-                    ? 'border-zinc-950 bg-zinc-950 text-white dark:border-white dark:bg-white dark:text-zinc-950'
-                    : 'border-zinc-200 text-zinc-600 dark:border-zinc-800 dark:text-zinc-300'
-                }`}
-              >
-                {method === 'CASH' ? 'Tiền mặt' : method === 'TRANSFER' ? 'Chuyển khoản' : 'Thẻ'}
-              </button>
-            ))}
-          </div>
-          {paymentMethod === 'TRANSFER' && (
-            <div className="mt-3">
-              <p className="mb-2 text-xs font-medium text-zinc-500 dark:text-zinc-400">
-                Quét mã QR để chuyển khoản
-              </p>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src="/images/transfer.png"
-                alt="Mã QR chuyển khoản"
-                loading="lazy"
-                className="mx-auto w-48 max-w-full"
-              />
-            </div>
-          )}
-          {paymentMethod === 'CASH' && (
-            <div className="mt-3 grid gap-3 border-t border-zinc-200 pt-3 sm:grid-cols-2 dark:border-zinc-800">
-              <div>
-                <Label htmlFor="retail-cash-received">Tiền khách đưa</Label>
-                <Input
-                  ref={cashReceivedRef}
-                  id="retail-cash-received"
-                  type="text"
-                  inputMode="numeric"
-                  placeholder="Ví dụ: 100.000"
-                  value={cashReceived}
-                  onChange={(event) => {
-                    const next = normalizeCashInput(
-                      event.target.value,
-                      event.target.selectionStart ?? event.target.value.length,
-                    )
-                    setCashReceived(next.value)
-                    requestAnimationFrame(() => {
-                      cashReceivedRef.current?.setSelectionRange(next.caret, next.caret)
-                    })
-                  }}
-                  className="mt-1 h-9 pl-3 pr-3"
-                />
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {getCashInputSuggestions(cashReceived).map((suggestion) => (
-                    <button
-                      key={suggestion.value}
-                      type="button"
-                      onClick={() => setCashReceived(formatCashInput(suggestion.value))}
-                      className="rounded-lg border border-zinc-200 px-2.5 py-1.5 text-xs font-medium text-zinc-700 transition-colors hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
-                    >
-                      {suggestion.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <div className="rounded-lg bg-zinc-50 px-3 py-2 dark:bg-zinc-800/70">
-                <span className="block text-xs font-medium text-zinc-500 dark:text-zinc-400">
-                  {hasCashReceived && changeAmount >= 0 ? 'Tiền trả lại' : 'Còn thiếu'}
-                </span>
-                <span className="mt-1 block text-lg font-bold tabular-nums text-zinc-950 dark:text-white">
-                  {hasCashReceived ? money(Math.abs(changeAmount)) : '—'}
-                </span>
-              </div>
-            </div>
-          )}
-        </div>
+        <PaymentMethodPicker
+          id="retail-payment"
+          label="Phương thức thanh toán"
+          amount={grandTotal}
+          method={paymentMethod}
+          onMethodChange={setPaymentMethod}
+        />
       </div>
     </Modal>
   )

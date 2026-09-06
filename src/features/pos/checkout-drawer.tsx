@@ -3,25 +3,19 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Loader2, Minus, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input, Label, Select } from "@/components/ui/input";
+import { Select } from "@/components/ui/input";
 import { Modal } from "@/components/ui/modal";
 import { useToast } from "@/components/ui/toast";
 import { apiJson, jsonRequest } from "@/lib/api";
-import {
-  cashInputToNumber,
-  formatCashInput,
-  getCashInputSuggestions,
-  normalizeCashInput,
-} from "@/lib/shared/cash-input";
 import {
   calcElapsedHMS,
   formatPausedHMS,
   money,
   pausedSecondsUntil,
-  paymentMethodLabel,
   toNumber,
 } from "./format";
 import { formatPromotionOption } from "./promotion-option";
+import { PaymentMethodPicker } from "./payment-method-picker";
 import {
   CheckoutPlayerPicker,
   GROUP_LABEL,
@@ -199,8 +193,6 @@ export function CheckoutDrawer({
 }) {
   const { success: notifySuccess, error: notifyError } = useToast();
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("CASH");
-  const [cashReceived, setCashReceived] = useState("");
-  const cashReceivedRef = useRef<HTMLInputElement>(null);
   const [cart, setCart] = useState<Record<string, number>>({});
   const [playQuote, setPlayQuote] = useState<PlayTimeQuote | null>(null);
   const [promotions, setPromotions] = useState<PromotionSnapshot[]>([]);
@@ -265,7 +257,6 @@ export function CheckoutDrawer({
     if (session) {
       /* eslint-disable react-hooks/set-state-in-effect */
       setPaymentMethod("CASH");
-      setCashReceived("");
       setCart({});
       setPromotionRuleId("");
       setPromotions([]);
@@ -651,9 +642,6 @@ export function CheckoutDrawer({
   const productSubtotal = cartLines.reduce((sum, line) => sum + line.total, 0);
   const sellableTotal = pendingSellTotal + productSubtotal;
   const grandTotal = Math.max(0, playTotal + sellableTotal - parkingFeeTotal);
-  const cashReceivedAmount = cashInputToNumber(cashReceived);
-  const hasCashReceived = cashReceived.trim() !== "" && Number.isFinite(cashReceivedAmount);
-  const changeAmount = cashReceivedAmount - grandTotal;
 
   const pricingBlocked = needsPricing && applicablePricingRules.length === 0;
   // Chọn ít nhất 1 người khi dùng picker
@@ -1209,81 +1197,13 @@ export function CheckoutDrawer({
 
             {/* ══ PHƯƠNG THỨC THANH TOÁN ══ */}
             <LedgerGroup title="Phương thức thanh toán">
-              <Select
+              <PaymentMethodPicker
+                key={session?.id ?? "retail"}
                 id="payment-method"
-                value={paymentMethod}
-                onChange={(event) => {
-                  const nextMethod = event.target.value as PaymentMethod;
-                  setPaymentMethod(nextMethod);
-                  if (nextMethod !== "CASH") setCashReceived("");
-                }}
-              >
-                <option value="CASH">{paymentMethodLabel("CASH")}</option>
-                <option value="TRANSFER">{paymentMethodLabel("TRANSFER")}</option>
-                <option value="CARD">{paymentMethodLabel("CARD")}</option>
-              </Select>
-              {paymentMethod === "TRANSFER" && (
-                <div>
-                  <p className="mb-2 text-xs font-medium text-zinc-500 dark:text-zinc-400">
-                    Quét mã QR để chuyển khoản
-                  </p>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src="/images/transfer.png"
-                    alt="Mã QR chuyển khoản"
-                    loading="lazy"
-                    className="mx-auto w-48 max-w-full"
-                  />
-                </div>
-              )}
-              {paymentMethod === "CASH" && (
-                <div className="mt-4 grid gap-3 border-t border-zinc-200 pt-4 sm:grid-cols-2 dark:border-zinc-800">
-                  <div>
-                    <Label htmlFor="cash-received">Tiền khách đưa</Label>
-                    <Input
-                      id="cash-received"
-                      type="text"
-                      inputMode="numeric"
-                      placeholder="Ví dụ: 100"
-                      value={cashReceived}
-                      onChange={(event) => {
-                        const next = normalizeCashInput(
-                          event.target.value,
-                          event.target.selectionStart ?? event.target.value.length,
-                        );
-                        setCashReceived(next.value);
-                        requestAnimationFrame(() =>
-                          cashReceivedRef.current?.setSelectionRange(next.caret, next.caret),
-                        );
-                      }}
-                    />
-                    <div className="mt-2 flex flex-wrap gap-2">
-                      {getCashInputSuggestions(cashReceived).map((suggestion) => (
-                        <button
-                          key={suggestion.value}
-                          type="button"
-                          onClick={() => setCashReceived(formatCashInput(suggestion.value))}
-                          className="rounded-lg border border-zinc-200 px-2.5 py-1.5 text-xs font-medium text-zinc-700 transition-colors hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
-                        >
-                          {suggestion.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="rounded-lg bg-zinc-50 px-3 py-2 dark:bg-zinc-800/70">
-                    <span className="block text-xs font-medium text-zinc-500 dark:text-zinc-400">
-                      {hasCashReceived && changeAmount >= 0
-                        ? "Tiền trả lại"
-                        : "Còn thiếu"}
-                    </span>
-                    <span className="mt-1 block text-lg font-bold tabular-nums text-zinc-950 dark:text-white">
-                      {hasCashReceived
-                        ? money(Math.abs(changeAmount))
-                        : "—"}
-                    </span>
-                  </div>
-                </div>
-              )}
+                amount={grandTotal}
+                method={paymentMethod}
+                onMethodChange={setPaymentMethod}
+              />
             </LedgerGroup>
           </div>
         )}
